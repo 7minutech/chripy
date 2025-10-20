@@ -48,7 +48,7 @@ func main() {
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(handlerFile))
 	mux.HandleFunc("GET /healthz", handlerReadiness)
 	mux.HandleFunc("GET /metrics", apiCfg.handlerMetric)
-	mux.HandleFunc("/reset", apiCfg.handlerReset)
+	mux.HandleFunc("POST /reset", apiCfg.handlerReset)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
