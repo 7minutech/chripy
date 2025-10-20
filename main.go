@@ -13,6 +13,8 @@ func main() {
 
 	mux.Handle("/", http.FileServer(http.Dir(filePathRoot)))
 
+	mux.HandleFunc("/healthz", readinessHandler)
+
 	var localServer = http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
@@ -21,4 +23,10 @@ func main() {
 	log.Printf("Serving on port: %s\n", port)
 	log.Fatal(localServer.ListenAndServe())
 
+}
+
+func readinessHandler(rw http.ResponseWriter, req *http.Request) {
+	rw.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	rw.WriteHeader(200)
+	rw.Write([]byte("OK"))
 }
