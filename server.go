@@ -2,9 +2,11 @@ package main
 
 import "net/http"
 
-var serverMux = http.ServeMux{}
+const port = "8080"
+
+var serverMux = http.NewServeMux()
 
 var localServer = http.Server{
-	Handler: &serverMux,
-	Addr:    ":8080",
+	Addr:    ":" + port,
+	Handler: serverMux,
 }
