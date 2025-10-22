@@ -69,7 +69,7 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
 
-func handlerValidateChrip(w http.ResponseWriter, r *http.Request) {
+func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
@@ -86,6 +86,8 @@ func handlerValidateChrip(w http.ResponseWriter, r *http.Request) {
 		Valid bool `json:"valid"`
 	}
 
+	defer r.Body.Close()
+
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		resp, err := json.Marshal(returnError{Error: "Something went wrong"})
 		if err != nil {
@@ -94,7 +96,7 @@ func handlerValidateChrip(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Header().Add("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(resp)
 		return
