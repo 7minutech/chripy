@@ -74,7 +74,7 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 		Body string `json:"body"`
 	}
 
-	const maxChripLength int = 140
+	const maxChirpLength int = 140
 
 	var params parameters
 
