@@ -39,24 +39,16 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 
 }
 
-var profainWords = []string{"kerfuffle", "sharbert", "fornax"}
+var profainWords = map[string]struct{}{"kerfuffle": {}, "sharbert": {}, "fornax": {}}
 var censor string = "****"
 
 func cleanProfanity(resp string) string {
 	words := strings.Split(resp, " ")
 	for i, word := range words {
-		if inProfainWords(word) {
+		_, ok := profainWords[strings.ToLower(word)]
+		if ok {
 			words[i] = censor
 		}
 	}
 	return strings.Join(words, " ")
-}
-
-func inProfainWords(word string) bool {
-	for _, profanity := range profainWords {
-		if strings.ToLower(word) == profanity {
-			return true
-		}
-	}
-	return false
 }
