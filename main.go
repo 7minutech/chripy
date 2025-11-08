@@ -1,14 +1,21 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/7minutech/chripy/internal/database"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 func (apiCfg *apiConfig) handlerMetric(w http.ResponseWriter, r *http.Request) {
@@ -39,10 +46,23 @@ func (apiCfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	godotenv.Load(".env")
+
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+
+	if err != nil {
+		log.Fatal("failed to open data base")
+	}
+
+	queries := database.New(db)
+
 	const filepathRoot = "."
 	const port = "8080"
 
-	var apiCfg = apiConfig{}
+	var apiCfg = apiConfig{
+		dbQueries: queries,
+	}
 
 	mux := http.NewServeMux()
 
