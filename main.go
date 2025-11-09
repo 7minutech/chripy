@@ -29,6 +29,14 @@ type User struct {
 	Email     string    `json:"email"`
 }
 
+type Chirp struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
 func (apiCfg *apiConfig) handlerMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -103,6 +111,54 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, resp)
 }
 
+func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		Body   string    `json:"body"`
+		UserID uuid.UUID `json:"user_id"`
+	}
+
+	const maxChirpLength int = 140
+
+	var params parameters
+
+	defer r.Body.Close()
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Something went wrong", err)
+		return
+	}
+
+	if len(params.Body) > maxChirpLength {
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
+		return
+	}
+
+	cleanedBody := cleanProfanity(params.Body)
+
+	chirpyParams := database.CreateChirpParams{
+		Body:   cleanedBody,
+		UserID: params.UserID,
+	}
+
+	chirp, err := apiCfg.dbQueries.CreateChirp(r.Context(), chirpyParams)
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "could not create chirp", err)
+		return
+	}
+
+	resp := Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resp)
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -132,7 +188,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetric)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
-	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/chirps", apiCfg.handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	srv := &http.Server{
 		Addr:    ":" + port,
