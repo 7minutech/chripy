@@ -19,6 +19,7 @@ import (
 type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbQueries      *database.Queries
+	platform       string
 }
 
 type User struct {
@@ -90,6 +91,7 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 func main() {
 	godotenv.Load(".env")
 
+	platform := os.Getenv("PLATFORM")
 	dbURL := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbURL)
 
@@ -104,6 +106,7 @@ func main() {
 
 	var apiCfg = apiConfig{
 		dbQueries: queries,
+		platform:  platform,
 	}
 
 	mux := http.NewServeMux()
