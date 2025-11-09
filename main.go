@@ -2,13 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/7minutech/chripy/internal/database"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -45,6 +48,45 @@ func (apiCfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		Email string `json:"email"`
+	}
+
+	var params = parameters{}
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		msg := "could not decode request body"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	user, err := apiCfg.dbQueries.CreateUser(r.Context(), params.Email)
+
+	if err != nil {
+		msg := "could not create user"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	type returnVal struct {
+		ID        uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"create_at"`
+		UpdatedAt time.Time `json:"update_at"`
+		Email     string    `json:"email"`
+	}
+
+	resp := returnVal{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusCreated, resp)
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -73,6 +115,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetric)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("POST /api/validate_chirp", handlerValidateChirp)
+	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
