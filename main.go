@@ -21,6 +21,13 @@ type apiConfig struct {
 	dbQueries      *database.Queries
 }
 
+type User struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"create_at"`
+	UpdatedAt time.Time `json:"update_at"`
+	Email     string    `json:"email"`
+}
+
 func (apiCfg *apiConfig) handlerMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -70,14 +77,7 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type returnVal struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"create_at"`
-		UpdatedAt time.Time `json:"update_at"`
-		Email     string    `json:"email"`
-	}
-
-	resp := returnVal{
+	resp := User{
 		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
