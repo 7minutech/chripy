@@ -33,6 +33,8 @@ func (apiCfg *apiConfig) handlerMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
+	defer r.Body.Close()
+
 	body := fmt.Sprintf(
 		"<html><body>"+
 			"<h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %d times!</p>"+
@@ -51,6 +53,8 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (apiCfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
+
+	defer r.Body.Close()
 
 	if apiCfg.platform != "dev" {
 		msg := "must be in dev platform"
@@ -72,6 +76,8 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var params = parameters{}
+
+	defer r.Body.Close()
 
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		msg := "could not decode request body"
@@ -138,6 +144,9 @@ func main() {
 }
 
 func handlerReadiness(w http.ResponseWriter, r *http.Request) {
+
+	defer r.Body.Close()
+
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(http.StatusText(http.StatusOK)))
