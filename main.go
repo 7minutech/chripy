@@ -51,9 +51,18 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (apiCfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
-	apiCfg.fileserverHits.Store(0)
 
-	w.WriteHeader(http.StatusOK)
+	if apiCfg.platform != "dev" {
+		msg := "must be in dev platform"
+		respondWithError(w, http.StatusForbidden, msg, fmt.Errorf("error: trying reset while not platform is not dev"))
+		return
+	}
+
+	if err := apiCfg.dbQueries.DeleteUsers(r.Context()); err != nil {
+		msg := "could not delete users"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
 }
 
 func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
