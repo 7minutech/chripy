@@ -148,13 +148,7 @@ func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	resp := Chirp{
-		ID:        chirp.ID,
-		CreatedAt: chirp.CreatedAt,
-		UpdatedAt: chirp.UpdatedAt,
-		Body:      chirp.Body,
-		UserID:    chirp.UserID,
-	}
+	resp := convertChirp(chirp)
 
 	respondWithJSON(w, http.StatusCreated, resp)
 }
