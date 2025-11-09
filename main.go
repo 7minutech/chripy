@@ -159,6 +159,20 @@ func (apiCfg *apiConfig) handlerValidateChirp(w http.ResponseWriter, r *http.Req
 	respondWithJSON(w, http.StatusCreated, resp)
 }
 
+func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+
+	dbChirps, err := apiCfg.dbQueries.GetChirps(r.Context())
+
+	if err != nil {
+		msg := "could not select all chirps"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+	}
+
+	chirps := mapChirp(dbChirps)
+
+	respondWithJSON(w, http.StatusOK, chirps)
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -188,6 +202,7 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetric)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	srv := &http.Server{
