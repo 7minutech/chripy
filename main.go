@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -167,6 +168,42 @@ func (apiCfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request
 	respondWithJSON(w, http.StatusOK, chirps)
 }
 
+func (apiCfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
+
+	chirpIDStr := r.PathValue("chirpID")
+
+	if chirpIDStr == "" {
+		msg := "chirp id was not found in url path"
+		respondWithError(w, http.StatusBadRequest, msg, nil)
+	}
+
+	chirpID, err := uuid.Parse(chirpIDStr)
+
+	if err != nil {
+		msg := "could not parse chirpID from string to uuid"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	dbChrip, err := apiCfg.dbQueries.GetChirp(r.Context(), chirpID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		msg := "chirp does not exist"
+		respondWithError(w, http.StatusNotFound, msg, err)
+		return
+	}
+
+	if err != nil {
+		msg := "db error getting chrip"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	chirp := convertChirp(dbChrip)
+
+	respondWithJSON(w, http.StatusOK, chirp)
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -197,6 +234,7 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerMetric)
 	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	mux.HandleFunc("GET /api/chirps", apiCfg.handlerGetChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirp)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
 	srv := &http.Server{
