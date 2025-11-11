@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/7minutech/chripy/internal/auth"
 	"github.com/7minutech/chripy/internal/database"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -81,7 +82,8 @@ func (apiCfg *apiConfig) handlerReset(w http.ResponseWriter, r *http.Request) {
 func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 
 	type parameters struct {
-		Email string `json:"email"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 
 	var params = parameters{}
@@ -94,7 +96,19 @@ func (apiCfg *apiConfig) handerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := apiCfg.dbQueries.CreateUser(r.Context(), params.Email)
+	hashedPassword, err := auth.HashPassword(params.Password)
+	if err != nil {
+		msg := "could not hash password"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	userParams := database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashedPassword,
+	}
+
+	user, err := apiCfg.dbQueries.CreateUser(r.Context(), userParams)
 
 	if err != nil {
 		msg := "could not create user"
