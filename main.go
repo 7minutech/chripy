@@ -218,6 +218,54 @@ func (apiCfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request)
 	respondWithJSON(w, http.StatusOK, chirp)
 }
 
+func (apiCfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
+
+	type parameters struct {
+		Password string `json:"password"`
+		Email    string `json:"email"`
+	}
+
+	var params = parameters{}
+
+	defer r.Body.Close()
+
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		msg := "could not decode request body"
+		respondWithError(w, http.StatusBadRequest, msg, err)
+		return
+	}
+
+	user, err := apiCfg.dbQueries.GetUserByEmail(r.Context(), params.Email)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		msg := "Incorrect email or password"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	if err != nil {
+		msg := "could not get user"
+		respondWithError(w, http.StatusInternalServerError, msg, err)
+		return
+	}
+
+	ok, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
+	if !ok || err != nil {
+		msg := "Incorrect email or password"
+		respondWithError(w, http.StatusUnauthorized, msg, err)
+		return
+	}
+
+	resp := User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	}
+
+	respondWithJSON(w, http.StatusOK, resp)
+}
+
 func main() {
 	godotenv.Load(".env")
 
@@ -251,6 +299,7 @@ func main() {
 	mux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.handlerGetChirp)
 	mux.HandleFunc("POST /api/chirps", apiCfg.handlerValidateChirp)
 	mux.HandleFunc("POST /api/users", apiCfg.handerUser)
+	mux.HandleFunc("POST /api/login", apiCfg.handlerLogin)
 	srv := &http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
