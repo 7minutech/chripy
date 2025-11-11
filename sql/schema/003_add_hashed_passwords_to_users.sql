@@ -1,7 +1,7 @@
 -- +goose Up
-ALTER TABLE chirps 
+ALTER TABLE users 
 ADD column hashed_password TEXT NOT NULL DEFAULT 'unset';
 
 -- +goose Down
-ALTER TABLE chirps
+ALTER TABLE users
 DROP column hashed_password;
